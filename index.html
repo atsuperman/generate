@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>audioFiles.js</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #resultWrapper {
+            position: relative;
+            margin-top: 40px;
+        }
+        #result {
+            padding: 15px;
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            overflow-x: auto;
+            max-height: 150px;
+            cursor: pointer;
+        }
+        #resultText {
+            white-space: pre;
+            margin: 0;
+        }
+        .copy-status {
+            position: absolute;
+            top: -30px;
+            right: 0;
+            padding: 4px 12px;
+            font-size: 0.9em;
+            color: #666;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 4px 4px 0 0;
+            border-bottom: none;
+            transition: all 0.2s ease;
+            z-index: 2;
+        }
+        .copy-status.copied {
+            color: #4CAF50;
+            border-color: #4CAF50;
+            font-weight: bold;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>song add code</h2>
+        <div class="input-group">
+            <label for="filename">File Name:</label>
+            <input type="text" id="filename" placeholder="Enter file name">
+        </div>
+        
+        <div class="input-group">
+            <label for="details">File Details:</label>
+            <input type="text" id="details" placeholder="Enter file details">
+        </div>
+        
+        <button onclick="generateCode()">Generate</button>
+        
+        <div id="resultWrapper">
+            <div class="copy-status" id="copyStatus">Copy</div>
+            <div id="result" onclick="copyResult()">
+                <pre id="resultText"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function generateCode() {
+            const fileName = document.getElementById('filename').value.trim();
+            const fileDetails = document.getElementById('details').value.trim();
+            
+            const result = `{ file: "${fileName}", details: "${fileDetails}" },`;
+            document.getElementById('resultText').textContent = result;
+            resetCopyStatus();
+        }
+
+        function copyResult() {
+            const resultText = document.getElementById('resultText').textContent;
+            if (!resultText) return;
+
+            navigator.clipboard.writeText(resultText)
+                .then(() => {
+                    const status = document.getElementById('copyStatus');
+                    status.textContent = 'Copied!';
+                    status.classList.add('copied');
+                    setTimeout(resetCopyStatus, 2000);
+                })
+                .catch(err => console.error('Failed to copy:', err));
+        }
+
+        function resetCopyStatus() {
+            const status = document.getElementById('copyStatus');
+            status.textContent = 'Copy';
+            status.classList.remove('copied');
+        }
+    </script>
+</body>
+</html>
