@@ -1,0 +1,201 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-File Details Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .input-groups {
+            margin-bottom: 15px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+        }
+        .custom-file-upload {
+            background-color: #4CAF50;
+            color: white;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline-block;
+            margin-top: 5px;
+        }
+        .selected-file-name {
+            margin-left: 10px;
+            color: #666;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #generateBtn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .add-btn {
+            background-color: #2196F3;
+            color: white;
+            margin-right: 10px;
+        }
+        #resultWrapper {
+            position: relative;
+            margin-top: 20px;
+        }
+        #result {
+            padding: 15px;
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            overflow-x: auto;
+            cursor: pointer;
+        }
+        .copy-status {
+            position: absolute;
+            top: -30px;
+            right: 0;
+            padding: 4px 12px;
+            font-size: 0.9em;
+            color: #666;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 4px 4px 0 0;
+            border-bottom: none;
+            transition: all 0.2s ease;
+        }
+        .copy-status.copied {
+            color: #4CAF50;
+            border-color: #4CAF50;
+            font-weight: bold;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Song Add Code Generator</h2>
+        <div class="input-groups">
+            <div class="input-group">
+                <label>Choose File:</label>
+                <label class="custom-file-upload">
+                    Browse Files
+                    <input type="file" class="file-input" style="display: none;">
+                </label>
+                <span class="selected-file-name">No file chosen</span>
+                <div class="input-group">
+                    <label>File Details:</label>
+                    <input type="text" class="details-input" placeholder="Enter file details">
+                </div>
+            </div>
+        </div>
+        
+        <button class="add-btn" onclick="addInputGroup()">+1</button>
+        <button id="generateBtn" onclick="generateCode()">Generate</button>
+        
+        <div id="resultWrapper">
+            <div class="copy-status" id="copyStatus">Copy</div>
+            <div id="result" onclick="copyResult()">
+                <pre id="resultText"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add event listener for file inputs
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('file-input')) {
+                const fileNameSpan = e.target.parentElement.nextElementSibling;
+                fileNameSpan.textContent = e.target.files[0] 
+                    ? e.target.files[0].name 
+                    : 'No file chosen';
+            }
+        });
+
+        function addInputGroup() {
+            const inputGroups = document.querySelector('.input-groups');
+            const newGroup = document.createElement('div');
+            newGroup.className = 'input-group';
+            
+            newGroup.innerHTML = `
+                <label>Choose File:</label>
+                <label class="custom-file-upload">
+                    Browse Files
+                    <input type="file" class="file-input" style="display: none;">
+                </label>
+                <span class="selected-file-name">No file chosen</span>
+                <div class="input-group">
+                    <label>File Details:</label>
+                    <input type="text" class="details-input" placeholder="Enter file details">
+                </div>
+            `;
+            
+            inputGroups.appendChild(newGroup);
+        }
+
+        function generateCode() {
+            const results = [];
+            document.querySelectorAll('.input-group').forEach(group => {
+                const fileInput = group.querySelector('.file-input');
+                const detailsInput = group.querySelector('.details-input');
+                
+                if (fileInput && detailsInput) {
+                    const fileName = fileInput.files[0] ? fileInput.files[0].name : '';
+                    const fileDetails = detailsInput.value.trim();
+                    
+                    if (fileName && fileDetails) {
+                        results.push(`{ file: "${fileName}", details: "${fileDetails}" },`);
+                    }
+                }
+            });
+
+            const resultText = results.join('\n');
+            document.getElementById('resultText').textContent = resultText;
+            resetCopyStatus();
+        }
+
+        function copyResult() {
+            const resultText = document.getElementById('resultText').textContent;
+            if (!resultText) return;
+
+            navigator.clipboard.writeText(resultText)
+                .then(() => {
+                    const status = document.getElementById('copyStatus');
+                    status.textContent = 'Copied!';
+                    status.classList.add('copied');
+                    setTimeout(resetCopyStatus, 2000);
+                })
+                .catch(err => console.error('Failed to copy:', err));
+        }
+
+        function resetCopyStatus() {
+            const status = document.getElementById('copyStatus');
+            status.textContent = 'Copy';
+            status.classList.remove('copied');
+        }
+    </script>
+</body>
+  </html>
