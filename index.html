@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>audioFiles.js</title>
+    <title>details generate</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -75,14 +75,32 @@
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
+        .custom-file-upload {
+            background-color: #4CAF50;
+            color: white;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline-block;
+            margin-top: 5px;
+        }
+        #selectedFileName {
+            margin-left: 10px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>song add code</h2>
         <div class="input-group">
-            <label for="filename">File Name:</label>
-            <input type="text" id="filename" placeholder="Enter file name">
+            <label>Choose File:</label>
+            <label for="fileInput" class="custom-file-upload">
+                Browse Files
+            </label>
+            <input type="file" id="fileInput" style="display: none;" onchange="updateFileName()">
+            <span id="selectedFileName">No file chosen</span>
         </div>
         
         <div class="input-group">
@@ -101,8 +119,20 @@
     </div>
 
     <script>
+        function updateFileName() {
+            const fileInput = document.getElementById('fileInput');
+            const fileNameSpan = document.getElementById('selectedFileName');
+            fileNameSpan.textContent = fileInput.files[0] ? fileInput.files[0].name : 'No file chosen';
+        }
+
         function generateCode() {
-            const fileName = document.getElementById('filename').value.trim();
+            const fileInput = document.getElementById('fileInput');
+            if (!fileInput.files[0]) {
+                alert('Please select a file first');
+                return;
+            }
+            
+            const fileName = fileInput.files[0].name;
             const fileDetails = document.getElementById('details').value.trim();
             
             const result = `{ file: "${fileName}", details: "${fileDetails}" },`;
