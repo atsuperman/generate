@@ -1,201 +1,536 @@
- <!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="ta">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-File Details Generator</title>
+    <title>Audio File Metadata Generator</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 20px auto;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            margin: 0;
             padding: 20px;
-        }
-        .input-groups {
-            margin-bottom: 15px;
-        }
-        .input-group {
-            margin-bottom: 15px;
-            padding: 15px;
-            border: 1px solid #eee;
-            border-radius: 4px;
-        }
-        .custom-file-upload {
-            background-color: #4CAF50;
-            color: white;
-            padding: 8px 12px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            display: inline-block;
-            margin-top: 5px;
-        }
-        .selected-file-name {
-            margin-left: 10px;
-            color: #666;
-        }
-        input[type="text"] {
-            width: 100%;
-            padding: 8px;
-            margin-top: 5px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        #generateBtn {
-            background-color: #4CAF50;
-            color: white;
-        }
-        .add-btn {
-            background-color: #2196F3;
-            color: white;
-            margin-right: 10px;
-        }
-        #resultWrapper {
-            position: relative;
-            margin-top: 20px;
-        }
-        #result {
-            padding: 15px;
-            background-color: #f8f8f8;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-family: monospace;
-            overflow-x: auto;
-            cursor: pointer;
-        }
-        .copy-status {
-            position: absolute;
-            top: -30px;
-            right: 0;
-            padding: 4px 12px;
-            font-size: 0.9em;
-            color: #666;
-            background-color: white;
-            border: 1px solid #ddd;
-            border-radius: 4px 4px 0 0;
-            border-bottom: none;
-            transition: all 0.2s ease;
-        }
-        .copy-status.copied {
-            color: #4CAF50;
-            border-color: #4CAF50;
-            font-weight: bold;
         }
         .container {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            padding: 24px;
+        }
+        h2 {
+            margin-top: 0;
+            color: #1e3c72;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        h2 small {
+            font-size: 0.7rem;
+            font-weight: normal;
+            color: #4a627a;
+        }
+        .rows-container {
+            margin: 20px 0;
+        }
+        .file-row {
+            background: #f9fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            transition: 0.2s;
+            position: relative;
+        }
+        .file-row:hover {
+            background: #ffffff;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+        .row-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-weight: 600;
+            color: #2c3e66;
+        }
+        .remove-row {
+            background: #fee2e2;
+            border: none;
+            color: #b91c1c;
+            border-radius: 40px;
+            padding: 4px 12px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        .remove-row:hover {
+            background: #fecaca;
+        }
+        .input-group {
+            margin-bottom: 14px;
+        }
+        .input-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #1e293b;
+            font-size: 0.85rem;
+        }
+        .input-group input, .input-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            transition: 0.2s;
+            font-family: inherit;
+        }
+        .input-group input:focus, .input-group textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+        }
+        .details-input {
+            resize: vertical;
+            min-height: 70px;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 20px 0 16px;
+        }
+        button {
+            border: none;
+            padding: 10px 18px;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.9rem;
+        }
+        .btn-primary {
+            background: #10b981;
+            color: white;
+            box-shadow: 0 2px 5px rgba(16,185,129,0.3);
+        }
+        .btn-primary:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background: #3b82f6;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #2563eb;
+        }
+        .btn-outline {
+            background: white;
+            border: 1px solid #cbd5e1;
+            color: #1e293b;
+        }
+        .btn-outline:hover {
+            background: #f1f5f9;
+        }
+        .result-wrapper {
+            margin-top: 28px;
+            border-top: 2px solid #e2e8f0;
+            padding-top: 20px;
+        }
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 8px;
+        }
+        .copy-badge {
+            background: #eef2ff;
+            padding: 6px 12px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #1e40af;
+            font-weight: 500;
+        }
+        .copy-badge.copied {
+            background: #10b981;
+            color: white;
+        }
+        pre {
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 16px;
+            border-radius: 14px;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.85rem;
+            margin: 0;
+            cursor: pointer;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .loading {
+            display: inline-block;
+            margin-left: 12px;
+            color: #3b82f6;
+            font-size: 0.8rem;
+        }
+        .error-msg {
+            color: #dc2626;
+            background: #fef2f2;
+            padding: 8px 12px;
+            border-radius: 12px;
+            margin-top: 12px;
+            font-size: 0.85rem;
+        }
+        .info-note {
+            font-size: 0.75rem;
+            color: #5b6e8c;
+            margin-top: 12px;
+            text-align: center;
+        }
+        hr {
+            margin: 16px 0;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Song Add Code Generator</h2>
-        <div class="input-groups">
-            <div class="input-group">
-                <label>Choose File:</label>
-                <label class="custom-file-upload">
-                    Browse Files
-                    <input type="file" class="file-input" style="display: none;">
-                </label>
-                <span class="selected-file-name">No file chosen</span>
-                <div class="input-group">
-                    <label>File Details:</label>
-                    <input type="text" class="details-input" placeholder="Enter file details">
-                </div>
+<div class="container">
+    <h2>🎵 Audio Metadata Generator <small>URL → filename + duration</small></h2>
+    <p style="color:#475569; margin-bottom: 20px;">GitHub raw audio URLs, தானாக filename decode ஆகும். Duration fetch செய்யப்பட்டு, உங்கள் details உடன் இணைந்து copy செய்யப்படும்.</p>
+
+    <div class="rows-container" id="rowsContainer">
+        <!-- Initial row -->
+        <div class="file-row" data-row-id="0">
+            <div class="row-header">
+                <span>📁 File #1</span>
+                <button type="button" class="remove-row" onclick="removeRow(this)">✖ Remove</button>
             </div>
-        </div>
-        
-        <button class="add-btn" onclick="addInputGroup()">+1</button>
-        <button id="generateBtn" onclick="generateCode()">Generate</button>
-        
-        <div id="resultWrapper">
-            <div class="copy-status" id="copyStatus">Copy</div>
-            <div id="result" onclick="copyResult()">
-                <pre id="resultText"></pre>
+            <div class="input-group">
+                <label>🔗 Audio file URL (GitHub raw / direct link)</label>
+                <input type="text" class="url-input" placeholder="https://github.com/.../song.m4a" value="https://github.com/atsuperman/play2/raw/refs/heads/main/Chikkimukki%20Kallu.m4a">
+            </div>
+            <div class="input-group">
+                <label>📝 File details (artist, movie, etc.)</label>
+                <textarea class="details-input" rows="2" placeholder="🎬 Citizen (2001) / 🎙️ Shankar Mahadevan, Sadhana Sargam / 🎼 Deva / 📝 Vairamuthu">🎬 Citizen (2001) / 🎙️ Shankar Mahadevan, Sadhana Sargam / 🎼 Deva / 📝 Vairamuthu</textarea>
             </div>
         </div>
     </div>
 
-    <script>
-        // Add event listener for file inputs
-        document.addEventListener('change', function(e) {
-            if (e.target.classList.contains('file-input')) {
-                const fileNameSpan = e.target.parentElement.nextElementSibling;
-                fileNameSpan.textContent = e.target.files[0] 
-                    ? e.target.files[0].name 
-                    : 'No file chosen';
-            }
-        });
+    <div class="action-buttons">
+        <button id="addRowBtn" class="btn-outline">➕ +1 (புதிய வரிசை)</button>
+        <button id="generateBtn" class="btn-primary">✨ Make it & Copy</button>
+    </div>
 
-        function addInputGroup() {
-            const inputGroups = document.querySelector('.input-groups');
-            const newGroup = document.createElement('div');
-            newGroup.className = 'input-group';
-            
-            newGroup.innerHTML = `
-                <label>Choose File:</label>
-                <label class="custom-file-upload">
-                    Browse Files
-                    <input type="file" class="file-input" style="display: none;">
-                </label>
-                <span class="selected-file-name">No file chosen</span>
-                <div class="input-group">
-                    <label>File Details:</label>
-                    <input type="text" class="details-input" placeholder="Enter file details">
-                </div>
-            `;
-            
-            inputGroups.appendChild(newGroup);
+    <div class="result-wrapper">
+        <div class="result-header">
+            <span>📋 Generated Output (click anywhere on code to copy)</span>
+            <span id="copyStatusBadge" class="copy-badge">📋 Copy all</span>
+        </div>
+        <div id="resultArea" onclick="copyResultFromPre()">
+            <pre id="outputPre">// Click "Make it" to generate formatted entries</pre>
+        </div>
+        <div id="errorMsg" class="error-msg" style="display: none;"></div>
+        <div class="info-note">
+            ⚡ Duration fetch ஆக 1-3 விநாடிகள் ஆகலாம். GitHub raw URLs சிறப்பாக வேலை செய்யும்.<br>
+            %20, %E0 போன்ற encoding தானாக decode ஆகும்.
+        </div>
+    </div>
+</div>
+
+<script>
+    let rowCounter = 1;
+
+    // helper: extract filename from URL and decode percent-encoding
+    function extractDecodedFilename(url) {
+        try {
+            // remove trailing slash if any
+            let cleanUrl = url.trim();
+            if (!cleanUrl) return null;
+            // get last segment after last '/'
+            let lastSlash = cleanUrl.lastIndexOf('/');
+            let filename = lastSlash !== -1 ? cleanUrl.substring(lastSlash + 1) : cleanUrl;
+            // remove query parameters if present
+            let queryIndex = filename.indexOf('?');
+            if (queryIndex !== -1) filename = filename.substring(0, queryIndex);
+            // decode percent-encoded characters (e.g., %20 -> space)
+            filename = decodeURIComponent(filename);
+            return filename;
+        } catch (e) {
+            console.warn("decode error", e);
+            // fallback: return raw last part
+            let parts = url.split('/');
+            return parts[parts.length-1].split('?')[0];
         }
+    }
 
-        function generateCode() {
-            const results = [];
-            document.querySelectorAll('.input-group').forEach(group => {
-                const fileInput = group.querySelector('.file-input');
-                const detailsInput = group.querySelector('.details-input');
-                
-                if (fileInput && detailsInput) {
-                    const fileName = fileInput.files[0] ? fileInput.files[0].name : '';
-                    const fileDetails = detailsInput.value.trim();
-                    
-                    if (fileName && fileDetails) {
-                        results.push(`{ file: "${fileName}", details: "${fileDetails}" },`);
+    // get duration from audio URL using Audio element
+    function fetchDurationFromUrl(url) {
+        return new Promise((resolve) => {
+            const audio = new Audio();
+            let resolved = false;
+            const timeout = setTimeout(() => {
+                if (!resolved) {
+                    resolved = true;
+                    audio.src = '';
+                    resolve(null);
+                }
+            }, 15000); // 15 seconds timeout
+
+            audio.onloadedmetadata = () => {
+                if (!resolved) {
+                    resolved = true;
+                    clearTimeout(timeout);
+                    const dur = audio.duration;
+                    audio.src = '';
+                    // duration can be Infinity if live stream, treat as error
+                    if (isFinite(dur) && dur > 0) {
+                        resolve(dur);
+                    } else {
+                        resolve(null);
                     }
                 }
+            };
+            audio.onerror = () => {
+                if (!resolved) {
+                    resolved = true;
+                    clearTimeout(timeout);
+                    audio.src = '';
+                    resolve(null);
+                }
+            };
+            audio.src = url;
+            // load() is called automatically when setting src
+        });
+    }
+
+    // escape double quotes and backslashes for safe string in output
+    function escapeForOutput(str) {
+        if (!str) return '';
+        return str.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    }
+
+    // main generate function
+    async function generateAndCopy() {
+        const rows = document.querySelectorAll('.file-row');
+        const rowData = [];
+        let hasError = false;
+
+        // collect basic info
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const urlInput = row.querySelector('.url-input');
+            const detailsTextarea = row.querySelector('.details-input');
+            let url = urlInput ? urlInput.value.trim() : '';
+            const details = detailsTextarea ? detailsTextarea.value.trim() : '';
+
+            if (!url) {
+                showError(`வரிசை #${i+1}: URL காலியாக உள்ளது. தயவுசெய்து URL ஐ உள்ளிடவும்.`);
+                hasError = true;
+                continue;
+            }
+            if (!details) {
+                showError(`வரிசை #${i+1}: details காலியாக உள்ளது.`);
+                hasError = true;
+                continue;
+            }
+
+            const filename = extractDecodedFilename(url);
+            if (!filename) {
+                showError(`வரிசை #${i+1}: URL இலிருந்து filename பிரித்தெடுக்க முடியவில்லை.`);
+                hasError = true;
+                continue;
+            }
+
+            rowData.push({
+                index: i,
+                url: url,
+                details: details,
+                filename: filename
             });
-
-            const resultText = results.join('\n');
-            document.getElementById('resultText').textContent = resultText;
-            resetCopyStatus();
         }
 
-        function copyResult() {
-            const resultText = document.getElementById('resultText').textContent;
-            if (!resultText) return;
-
-            navigator.clipboard.writeText(resultText)
-                .then(() => {
-                    const status = document.getElementById('copyStatus');
-                    status.textContent = 'Copied!';
-                    status.classList.add('copied');
-                    setTimeout(resetCopyStatus, 2000);
-                })
-                .catch(err => console.error('Failed to copy:', err));
+        if (hasError || rowData.length === 0) {
+            if (rowData.length === 0 && !hasError) {
+                showError("எந்த வரிசையும் இல்லை. தயவுசெய்து +1 பொத்தானைப் பயன்படுத்தி சேர்க்கவும்.");
+            }
+            return;
         }
 
-        function resetCopyStatus() {
-            const status = document.getElementById('copyStatus');
-            status.textContent = 'Copy';
-            status.classList.remove('copied');
+        // Show loading indicator on button
+        const genBtn = document.getElementById('generateBtn');
+        const originalBtnText = genBtn.innerHTML;
+        genBtn.innerHTML = '⏳ Fetching durations...';
+        genBtn.disabled = true;
+
+        // Clear previous errors
+        hideError();
+
+        // fetch durations for all rows in parallel
+        const promises = rowData.map(item => fetchDurationFromUrl(item.url));
+        const durations = await Promise.all(promises);
+
+        genBtn.innerHTML = originalBtnText;
+        genBtn.disabled = false;
+
+        // Build result lines
+        const outputLines = [];
+        let anyDurationError = false;
+
+        for (let i = 0; i < rowData.length; i++) {
+            const data = rowData[i];
+            const durationSec = durations[i];
+            if (durationSec === null || isNaN(durationSec)) {
+                showError(`⚠️ "${data.filename}" - duration பெற முடியவில்லை (CORS / invalid audio). மற்ற வரிசைகள் process செய்யப்பட்டன.`);
+                anyDurationError = true;
+                continue;
+            }
+            const roundedDuration = Math.round(durationSec);
+            const escapedFile = escapeForOutput(data.filename);
+            const escapedDetails = escapeForOutput(data.details);
+            const line = `{ file: "${escapedFile}", details: "${escapedDetails}", duration: ${roundedDuration} },`;
+            outputLines.push(line);
         }
-    </script>
+
+        if (outputLines.length === 0) {
+            if (!anyDurationError) showError("சரியான duration உள்ள எந்த வரிசையும் இல்லை.");
+            return;
+        }
+
+        const finalOutput = outputLines.join('\n');
+        // display in pre
+        const preElement = document.getElementById('outputPre');
+        preElement.textContent = finalOutput;
+
+        // copy to clipboard
+        try {
+            await navigator.clipboard.writeText(finalOutput);
+            // update copy badge
+            const badge = document.getElementById('copyStatusBadge');
+            badge.textContent = '✅ Copied!';
+            badge.classList.add('copied');
+            setTimeout(() => {
+                badge.textContent = '📋 Copy all';
+                badge.classList.remove('copied');
+            }, 2000);
+            // also show small success message temporarily
+            if (!anyDurationError) {
+                const tempMsg = document.createElement('div');
+                tempMsg.className = 'error-msg';
+                tempMsg.style.backgroundColor = '#e0f2fe';
+                tempMsg.style.color = '#0369a1';
+                tempMsg.innerText = '✔️ Output copied to clipboard!';
+                const resultDiv = document.querySelector('.result-wrapper');
+                resultDiv.appendChild(tempMsg);
+                setTimeout(() => tempMsg.remove(), 2500);
+            }
+        } catch (err) {
+            console.error("Copy failed", err);
+            showError("Clipboard copy failed, but result is shown below. You can manually copy.");
+        }
+    }
+
+    function showError(msg) {
+        const errorDiv = document.getElementById('errorMsg');
+        errorDiv.textContent = msg;
+        errorDiv.style.display = 'block';
+        setTimeout(() => {
+            if (errorDiv.style.display === 'block') {
+                errorDiv.style.display = 'none';
+            }
+        }, 6000);
+    }
+
+    function hideError() {
+        const errorDiv = document.getElementById('errorMsg');
+        errorDiv.style.display = 'none';
+        errorDiv.textContent = '';
+    }
+
+    // copy from pre area (click on pre)
+    async function copyResultFromPre() {
+        const pre = document.getElementById('outputPre');
+        const text = pre.textContent;
+        if (!text || text === '// Click "Make it" to generate formatted entries') return;
+        try {
+            await navigator.clipboard.writeText(text);
+            const badge = document.getElementById('copyStatusBadge');
+            badge.textContent = '✅ Copied!';
+            badge.classList.add('copied');
+            setTimeout(() => {
+                badge.textContent = '📋 Copy all';
+                badge.classList.remove('copied');
+            }, 2000);
+        } catch (err) {
+            showError("Copy failed: " + err);
+        }
+    }
+
+    // add new row (plus button)
+    function addNewRow() {
+        const container = document.getElementById('rowsContainer');
+        const newId = rowCounter++;
+        const newRow = document.createElement('div');
+        newRow.className = 'file-row';
+        newRow.setAttribute('data-row-id', newId);
+        newRow.innerHTML = `
+            <div class="row-header">
+                <span>📁 File #${newId+1}</span>
+                <button type="button" class="remove-row" onclick="removeRow(this)">✖ Remove</button>
+            </div>
+            <div class="input-group">
+                <label>🔗 Audio file URL</label>
+                <input type="text" class="url-input" placeholder="https://example.com/song.mp3" value="">
+            </div>
+            <div class="input-group">
+                <label>📝 File details</label>
+                <textarea class="details-input" rows="2" placeholder="Movie / Singer / Music / Lyrics"></textarea>
+            </div>
+        `;
+        container.appendChild(newRow);
+    }
+
+    // remove row
+    function removeRow(btn) {
+        const row = btn.closest('.file-row');
+        if (row) {
+            const allRows = document.querySelectorAll('.file-row');
+            if (allRows.length === 1) {
+                showError("குறைந்தது ஒரு வரிசை இருக்க வேண்டும். நீக்க முடியாது.");
+                return;
+            }
+            row.remove();
+            // re-index headers for display (just visual)
+            const remaining = document.querySelectorAll('.file-row');
+            remaining.forEach((r, idx) => {
+                const headerSpan = r.querySelector('.row-header span');
+                if (headerSpan) {
+                    headerSpan.textContent = `📁 File #${idx+1}`;
+                }
+            });
+        }
+    }
+
+    // event bindings
+    document.getElementById('addRowBtn').addEventListener('click', addNewRow);
+    document.getElementById('generateBtn').addEventListener('click', generateAndCopy);
+    // Also allow copy badge click to copy pre content
+    document.getElementById('copyStatusBadge').addEventListener('click', (e) => {
+        e.stopPropagation();
+        copyResultFromPre();
+    });
+
+    // optional: pre-fill example second row? Not needed but user can add.
+    // ensure first row remove button works if there are multiple, but we have one row initially, remove should not delete last.
+    // style: remove button for first row visible, but if only one, it will be blocked by logic.
+</script>
 </body>
-  </html>
+</html>
