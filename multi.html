@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio File Metadata Generator</title>
+    <title>Audio Metadata Generator</title>
     <style>
         * {
             box-sizing: border-box;
@@ -191,24 +191,30 @@
             margin-top: 12px;
             font-size: 0.85rem;
         }
+        .warning-msg {
+            color: #b45309;
+            background: #fffbeb;
+            padding: 8px 12px;
+            border-radius: 12px;
+            margin-top: 12px;
+            font-size: 0.85rem;
+            border-left: 4px solid #f59e0b;
+        }
         .info-note {
             font-size: 0.75rem;
             color: #5b6e8c;
             margin-top: 12px;
             text-align: center;
         }
-        hr {
-            margin: 16px 0;
-        }
     </style>
 </head>
 <body>
 <div class="container">
     <h2>🎵 Audio Metadata Generator <small>URL → filename + duration</small></h2>
-    <p style="color:#475569; margin-bottom: 20px;">GitHub raw audio URLs, தானாக filename decode ஆகும். Duration fetch செய்யப்பட்டு, உங்கள் details உடன் இணைந்து copy செய்யப்படும்.</p>
+    <p style="color:#475569; margin-bottom: 20px;">GitHub raw audio URLs – filename decode & duration fetch. <strong>URL மற்றும் Details இரண்டும் நிரப்பப்பட்ட வரிசைகள் மட்டுமே செயலாக்கப்படும்.</strong></p>
 
     <div class="rows-container" id="rowsContainer">
-        <!-- Initial row -->
+        <!-- Initial row: completely empty -->
         <div class="file-row" data-row-id="0">
             <div class="row-header">
                 <span>📁 File #1</span>
@@ -216,11 +222,11 @@
             </div>
             <div class="input-group">
                 <label>🔗 Audio file URL (GitHub raw / direct link)</label>
-                <input type="text" class="url-input" placeholder="https://github.com/.../song.m4a" value="https://github.com/atsuperman/play2/raw/refs/heads/main/Chikkimukki%20Kallu.m4a">
+                <input type="text" class="url-input" placeholder="https://github.com/.../song.m4a" value="">
             </div>
             <div class="input-group">
                 <label>📝 File details (artist, movie, etc.)</label>
-                <textarea class="details-input" rows="2" placeholder="🎬 Citizen (2001) / 🎙️ Shankar Mahadevan, Sadhana Sargam / 🎼 Deva / 📝 Vairamuthu">🎬 Citizen (2001) / 🎙️ Shankar Mahadevan, Sadhana Sargam / 🎼 Deva / 📝 Vairamuthu</textarea>
+                <textarea class="details-input" rows="2" placeholder="🎬 Movie / 🎙️ Singer / 🎼 Music / 📝 Lyrics"></textarea>
             </div>
         </div>
     </div>
@@ -239,6 +245,7 @@
             <pre id="outputPre">// Click "Make it" to generate formatted entries</pre>
         </div>
         <div id="errorMsg" class="error-msg" style="display: none;"></div>
+        <div id="warningMsg" class="warning-msg" style="display: none;"></div>
         <div class="info-note">
             ⚡ Duration fetch ஆக 1-3 விநாடிகள் ஆகலாம். GitHub raw URLs சிறப்பாக வேலை செய்யும்.<br>
             %20, %E0 போன்ற encoding தானாக decode ஆகும்.
@@ -252,27 +259,21 @@
     // helper: extract filename from URL and decode percent-encoding
     function extractDecodedFilename(url) {
         try {
-            // remove trailing slash if any
             let cleanUrl = url.trim();
             if (!cleanUrl) return null;
-            // get last segment after last '/'
             let lastSlash = cleanUrl.lastIndexOf('/');
             let filename = lastSlash !== -1 ? cleanUrl.substring(lastSlash + 1) : cleanUrl;
-            // remove query parameters if present
             let queryIndex = filename.indexOf('?');
             if (queryIndex !== -1) filename = filename.substring(0, queryIndex);
-            // decode percent-encoded characters (e.g., %20 -> space)
             filename = decodeURIComponent(filename);
             return filename;
         } catch (e) {
-            console.warn("decode error", e);
-            // fallback: return raw last part
             let parts = url.split('/');
             return parts[parts.length-1].split('?')[0];
         }
     }
 
-    // get duration from audio URL using Audio element
+    // get duration from audio URL
     function fetchDurationFromUrl(url) {
         return new Promise((resolve) => {
             const audio = new Audio();
@@ -283,7 +284,7 @@
                     audio.src = '';
                     resolve(null);
                 }
-            }, 15000); // 15 seconds timeout
+            }, 15000);
 
             audio.onloadedmetadata = () => {
                 if (!resolved) {
@@ -291,12 +292,8 @@
                     clearTimeout(timeout);
                     const dur = audio.duration;
                     audio.src = '';
-                    // duration can be Infinity if live stream, treat as error
-                    if (isFinite(dur) && dur > 0) {
-                        resolve(dur);
-                    } else {
-                        resolve(null);
-                    }
+                    if (isFinite(dur) && dur > 0) resolve(dur);
+                    else resolve(null);
                 }
             };
             audio.onerror = () => {
@@ -308,112 +305,93 @@
                 }
             };
             audio.src = url;
-            // load() is called automatically when setting src
         });
     }
 
-    // escape double quotes and backslashes for safe string in output
     function escapeForOutput(str) {
         if (!str) return '';
         return str.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
     }
 
-    // main generate function
     async function generateAndCopy() {
         const rows = document.querySelectorAll('.file-row');
-        const rowData = [];
-        let hasError = false;
-
-        // collect basic info
+        const validItems = [];
+        
+        // collect only rows with non-empty URL and details
         for (let i = 0; i < rows.length; i++) {
             const row = rows[i];
             const urlInput = row.querySelector('.url-input');
             const detailsTextarea = row.querySelector('.details-input');
-            let url = urlInput ? urlInput.value.trim() : '';
+            const url = urlInput ? urlInput.value.trim() : '';
             const details = detailsTextarea ? detailsTextarea.value.trim() : '';
-
-            if (!url) {
-                showError(`வரிசை #${i+1}: URL காலியாக உள்ளது. தயவுசெய்து URL ஐ உள்ளிடவும்.`);
-                hasError = true;
-                continue;
+            
+            if (url !== '' && details !== '') {
+                const filename = extractDecodedFilename(url);
+                if (filename) {
+                    validItems.push({
+                        url: url,
+                        details: details,
+                        filename: filename
+                    });
+                } else {
+                    showWarning(`வரிசை #${i+1}: URL இலிருந்து filename பிரித்தெடுக்க முடியவில்லை, இந்த வரிசை தவிர்க்கப்பட்டது.`);
+                }
+            } else {
+                // silently skip incomplete rows
+                if (url !== '' || details !== '') {
+                    showWarning(`வரிசை #${i+1}: URL அல்லது Details காலியாக உள்ளது, தவிர்க்கப்பட்டது.`);
+                }
             }
-            if (!details) {
-                showError(`வரிசை #${i+1}: details காலியாக உள்ளது.`);
-                hasError = true;
-                continue;
-            }
-
-            const filename = extractDecodedFilename(url);
-            if (!filename) {
-                showError(`வரிசை #${i+1}: URL இலிருந்து filename பிரித்தெடுக்க முடியவில்லை.`);
-                hasError = true;
-                continue;
-            }
-
-            rowData.push({
-                index: i,
-                url: url,
-                details: details,
-                filename: filename
-            });
         }
 
-        if (hasError || rowData.length === 0) {
-            if (rowData.length === 0 && !hasError) {
-                showError("எந்த வரிசையும் இல்லை. தயவுசெய்து +1 பொத்தானைப் பயன்படுத்தி சேர்க்கவும்.");
-            }
+        if (validItems.length === 0) {
+            showError("சரியான URL மற்றும் Details உடைய எந்த வரிசையும் இல்லை. தயவுசெய்து குறைந்தது ஒரு வரிசையை முழுமையாக நிரப்பவும்.");
             return;
         }
 
-        // Show loading indicator on button
+        // Show loading
         const genBtn = document.getElementById('generateBtn');
         const originalBtnText = genBtn.innerHTML;
         genBtn.innerHTML = '⏳ Fetching durations...';
         genBtn.disabled = true;
-
-        // Clear previous errors
         hideError();
+        hideWarning();
 
-        // fetch durations for all rows in parallel
-        const promises = rowData.map(item => fetchDurationFromUrl(item.url));
+        const promises = validItems.map(item => fetchDurationFromUrl(item.url));
         const durations = await Promise.all(promises);
 
         genBtn.innerHTML = originalBtnText;
         genBtn.disabled = false;
 
-        // Build result lines
         const outputLines = [];
-        let anyDurationError = false;
+        let durationErrors = false;
 
-        for (let i = 0; i < rowData.length; i++) {
-            const data = rowData[i];
+        for (let i = 0; i < validItems.length; i++) {
+            const item = validItems[i];
             const durationSec = durations[i];
             if (durationSec === null || isNaN(durationSec)) {
-                showError(`⚠️ "${data.filename}" - duration பெற முடியவில்லை (CORS / invalid audio). மற்ற வரிசைகள் process செய்யப்பட்டன.`);
-                anyDurationError = true;
+                showWarning(`⚠️ "${item.filename}" - duration பெற முடியவில்லை (CORS / invalid audio). இந்த வரிசை தவிர்க்கப்பட்டது.`);
+                durationErrors = true;
                 continue;
             }
             const roundedDuration = Math.round(durationSec);
-            const escapedFile = escapeForOutput(data.filename);
-            const escapedDetails = escapeForOutput(data.details);
-            const line = `{ file: "${escapedFile}", details: "${escapedDetails}", duration: ${roundedDuration} },`;
-            outputLines.push(line);
+            const escapedFile = escapeForOutput(item.filename);
+            const escapedDetails = escapeForOutput(item.details);
+            outputLines.push(`{ file: "${escapedFile}", details: "${escapedDetails}", duration: ${roundedDuration} },`);
         }
 
         if (outputLines.length === 0) {
-            if (!anyDurationError) showError("சரியான duration உள்ள எந்த வரிசையும் இல்லை.");
+            showError("duration உடைய எந்த வரிசையும் இல்லை. URL சரியான ஆடியோ கோப்பாக இருக்கிறதா என சரிபார்க்கவும்.");
             return;
         }
 
         const finalOutput = outputLines.join('\n');
-        // display in pre
         const preElement = document.getElementById('outputPre');
         preElement.textContent = finalOutput;
 
-        // copy to clipboard
+        // Copy to clipboard
         try {
             await navigator.clipboard.writeText(finalOutput);
-            // update copy badge
             const badge = document.getElementById('copyStatusBadge');
             badge.textContent = '✅ Copied!';
             badge.classList.add('copied');
@@ -421,19 +399,17 @@
                 badge.textContent = '📋 Copy all';
                 badge.classList.remove('copied');
             }, 2000);
-            // also show small success message temporarily
-            if (!anyDurationError) {
-                const tempMsg = document.createElement('div');
-                tempMsg.className = 'error-msg';
-                tempMsg.style.backgroundColor = '#e0f2fe';
-                tempMsg.style.color = '#0369a1';
-                tempMsg.innerText = '✔️ Output copied to clipboard!';
-                const resultDiv = document.querySelector('.result-wrapper');
-                resultDiv.appendChild(tempMsg);
-                setTimeout(() => tempMsg.remove(), 2500);
-            }
+            
+            // Optional success flash
+            const tempMsg = document.createElement('div');
+            tempMsg.className = 'error-msg';
+            tempMsg.style.backgroundColor = '#e0f2fe';
+            tempMsg.style.color = '#0369a1';
+            tempMsg.innerText = '✔️ Output copied to clipboard!';
+            const resultDiv = document.querySelector('.result-wrapper');
+            resultDiv.appendChild(tempMsg);
+            setTimeout(() => tempMsg.remove(), 2500);
         } catch (err) {
-            console.error("Copy failed", err);
             showError("Clipboard copy failed, but result is shown below. You can manually copy.");
         }
     }
@@ -443,19 +419,28 @@
         errorDiv.textContent = msg;
         errorDiv.style.display = 'block';
         setTimeout(() => {
-            if (errorDiv.style.display === 'block') {
-                errorDiv.style.display = 'none';
-            }
+            if (errorDiv.style.display === 'block') errorDiv.style.display = 'none';
         }, 6000);
     }
-
     function hideError() {
         const errorDiv = document.getElementById('errorMsg');
         errorDiv.style.display = 'none';
         errorDiv.textContent = '';
     }
+    function showWarning(msg) {
+        const warnDiv = document.getElementById('warningMsg');
+        warnDiv.textContent = msg;
+        warnDiv.style.display = 'block';
+        setTimeout(() => {
+            if (warnDiv.style.display === 'block') warnDiv.style.display = 'none';
+        }, 5000);
+    }
+    function hideWarning() {
+        const warnDiv = document.getElementById('warningMsg');
+        warnDiv.style.display = 'none';
+        warnDiv.textContent = '';
+    }
 
-    // copy from pre area (click on pre)
     async function copyResultFromPre() {
         const pre = document.getElementById('outputPre');
         const text = pre.textContent;
@@ -474,7 +459,6 @@
         }
     }
 
-    // add new row (plus button)
     function addNewRow() {
         const container = document.getElementById('rowsContainer');
         const newId = rowCounter++;
@@ -498,7 +482,6 @@
         container.appendChild(newRow);
     }
 
-    // remove row
     function removeRow(btn) {
         const row = btn.closest('.file-row');
         if (row) {
@@ -508,7 +491,6 @@
                 return;
             }
             row.remove();
-            // re-index headers for display (just visual)
             const remaining = document.querySelectorAll('.file-row');
             remaining.forEach((r, idx) => {
                 const headerSpan = r.querySelector('.row-header span');
@@ -519,18 +501,12 @@
         }
     }
 
-    // event bindings
     document.getElementById('addRowBtn').addEventListener('click', addNewRow);
     document.getElementById('generateBtn').addEventListener('click', generateAndCopy);
-    // Also allow copy badge click to copy pre content
     document.getElementById('copyStatusBadge').addEventListener('click', (e) => {
         e.stopPropagation();
         copyResultFromPre();
     });
-
-    // optional: pre-fill example second row? Not needed but user can add.
-    // ensure first row remove button works if there are multiple, but we have one row initially, remove should not delete last.
-    // style: remove button for first row visible, but if only one, it will be blocked by logic.
 </script>
 </body>
 </html>
