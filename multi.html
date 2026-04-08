@@ -177,12 +177,6 @@
             white-space: pre-wrap;
             word-break: break-all;
         }
-        .loading {
-            display: inline-block;
-            margin-left: 12px;
-            color: #3b82f6;
-            font-size: 0.8rem;
-        }
         .error-msg {
             color: #dc2626;
             background: #fef2f2;
@@ -211,7 +205,8 @@
 <body>
 <div class="container">
     <h2>🎵 Audio Metadata Generator <small>URL → filename + duration</small></h2>
-    <p style="color:#475569; margin-bottom: 20px;">GitHub raw audio URLs – filename decode & duration fetch. <strong>URL மற்றும் Details இரண்டும் நிரப்பப்பட்ட வரிசைகள் மட்டுமே செயலாக்கப்படும்.</strong></p>
+    <p style="color:#475569; margin-bottom: 20px;">GitHub raw audio URLs – filename decode & duration fetch. <strong>URL மற்றும் Details இரண்டும் நிரப்பப்பட்ட வரிசைகள் மட்டுமே செயலாக்கப்படும்.</strong><br>
+    <span style="font-size:0.8rem;">✨ <strong>Fix:</strong> Details புலத்தில் முன்னும் பின்னும் உள்ள double quotes ("") தானாக நீக்கப்படும்.</span></p>
 
     <div class="rows-container" id="rowsContainer">
         <!-- Initial row: completely empty -->
@@ -308,9 +303,15 @@
         });
     }
 
-    function escapeForOutput(str) {
+    // Escape backslashes and double quotes for safe string interpolation.
+    // But first, clean the details string: remove leading/trailing double quotes.
+    function cleanAndEscape(str) {
         if (!str) return '';
-        return str.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+        // Remove leading and trailing double quotes (if they exist as a pair or single)
+        // This fixes the issue where users accidentally paste details with quotes.
+        let cleaned = str.replace(/^"|"$/g, '');
+        // Now escape backslashes and any remaining double quotes inside
+        return cleaned.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
     }
 
     async function generateAndCopy() {
@@ -323,7 +324,7 @@
             const urlInput = row.querySelector('.url-input');
             const detailsTextarea = row.querySelector('.details-input');
             const url = urlInput ? urlInput.value.trim() : '';
-            const details = detailsTextarea ? detailsTextarea.value.trim() : '';
+            let details = detailsTextarea ? detailsTextarea.value.trim() : '';
             
             if (url !== '' && details !== '') {
                 const filename = extractDecodedFilename(url);
@@ -337,7 +338,6 @@
                     showWarning(`வரிசை #${i+1}: URL இலிருந்து filename பிரித்தெடுக்க முடியவில்லை, இந்த வரிசை தவிர்க்கப்பட்டது.`);
                 }
             } else {
-                // silently skip incomplete rows
                 if (url !== '' || details !== '') {
                     showWarning(`வரிசை #${i+1}: URL அல்லது Details காலியாக உள்ளது, தவிர்க்கப்பட்டது.`);
                 }
@@ -375,8 +375,8 @@
                 continue;
             }
             const roundedDuration = Math.round(durationSec);
-            const escapedFile = escapeForOutput(item.filename);
-            const escapedDetails = escapeForOutput(item.details);
+            const escapedFile = cleanAndEscape(item.filename);  // filename unlikely to have quotes, but safe
+            const escapedDetails = cleanAndEscape(item.details); // this strips outer quotes and escapes inner ones
             outputLines.push(`{ file: "${escapedFile}", details: "${escapedDetails}", duration: ${roundedDuration} },`);
         }
 
@@ -400,7 +400,6 @@
                 badge.classList.remove('copied');
             }, 2000);
             
-            // Optional success flash
             const tempMsg = document.createElement('div');
             tempMsg.className = 'error-msg';
             tempMsg.style.backgroundColor = '#e0f2fe';
